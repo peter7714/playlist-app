@@ -8,6 +8,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///playlist-app'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = True
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 connect_db(app)
 db.create_all()
@@ -17,7 +18,7 @@ app.config['SECRET_KEY'] = "I'LL NEVER TELL!!"
 # Having the Debug Toolbar show redirects explicitly is often useful;
 # however, if you want to turn it off, you can uncomment this line:
 #
-# app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+app.app_context().push()
 
 debug = DebugToolbarExtension(app)
 
@@ -44,18 +45,26 @@ def show_all_playlists():
 @app.route("/playlists/<int:playlist_id>")
 def show_playlist(playlist_id):
     """Show detail on specific playlist."""
-
+    playlist = Playlist.query.get_or_404(playlist_id)
+    return render_template('playlist.html', playlist=playlist)
     # ADD THE NECESSARY CODE HERE FOR THIS ROUTE TO WORK
 
 
 @app.route("/playlists/add", methods=["GET", "POST"])
 def add_playlist():
     """Handle add-playlist form:
-
     - if form not filled out or invalid: show form
     - if valid: add playlist to SQLA and redirect to list-of-playlists
     """
-
+    form = PlaylistForm()
+    if form.validate_on_submit():
+        name = form.name.data
+        description = form.description.data
+        new_playlist = Playlist(name=name, description=description)
+        db.session.add(new_playlist)
+        db.session.commit()
+        return redirect('/playlists')
+    return render_template('new_playlist.html', form=form)
     # ADD THE NECESSARY CODE HERE FOR THIS ROUTE TO WORK
 
 
